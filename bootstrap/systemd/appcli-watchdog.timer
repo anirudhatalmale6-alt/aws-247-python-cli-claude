@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the watchdog every __INTERVAL__ minute(s)
+
+[Timer]
+# First check 60s after boot, then every __INTERVAL__ minute(s).
+OnBootSec=60
+OnUnitActiveSec=__INTERVAL__min
+AccuracySec=5s
+Persistent=true
+Unit=appcli-watchdog.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,21 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+
+project_name = "visa-cli"
+aws_region   = "eu-west-1"    # pick the region closest to you
+
+alert_email  = "you@example.com"
+# alert_sms  = "+919876543210"
+
+# Leave app_repo_url empty on the first apply to deploy the demo worker and
+# prove the plumbing. Fill it in once your code is in a repo.
+app_repo_url   = ""
+app_branch     = "main"
+app_entrypoint = "python -u main.py"
+
+instance_type      = "t3.micro"
+monthly_budget_usd = 20
+
+# Store the Anthropic key with the CLI after apply instead of putting it here,
+# so it never lands in terraform.tfstate.
+claude_model   = "sonnet"
+claude_autofix = false

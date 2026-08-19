@@ -1,0 +1,69 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root",
+    "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+  },
+  "metrics": {
+    "namespace": "CWAgent",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "aggregation_dimensions": [["InstanceId"]],
+    "metrics_collected": {
+      "mem": {
+        "measurement": ["mem_used_percent"],
+        "metrics_collection_interval": 60
+      },
+      "disk": {
+        "measurement": ["disk_used_percent"],
+        "resources": ["/"],
+        "metrics_collection_interval": 300
+      },
+      "swap": {
+        "measurement": ["swap_used_percent"],
+        "metrics_collection_interval": 300
+      }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/appcli/app.log",
+            "log_group_name": "__LOG_GROUP_APP__",
+            "log_stream_name": "{instance_id}/app",
+            "timezone": "UTC",
+            "multi_line_start_pattern": "^\\d{4}-\\d{2}-\\d{2}|^\\[|^Traceback"
+          },
+          {
+            "file_path": "/var/log/appcli/watchdog.log",
+            "log_group_name": "__LOG_GROUP_WATCHDOG__",
+            "log_stream_name": "{instance_id}/watchdog",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/appcli/claude/*.md",
+            "log_group_name": "__LOG_GROUP_WATCHDOG__",
+            "log_stream_name": "{instance_id}/claude-reports",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/bootstrap.log",
+            "log_group_name": "__LOG_GROUP_SYSTEM__",
+            "log_stream_name": "{instance_id}/bootstrap",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/messages",
+            "log_group_name": "__LOG_GROUP_SYSTEM__",
+            "log_stream_name": "{instance_id}/messages",
+            "timezone": "UTC"
+          }
+        ]
+      }
+    },
+    "force_flush_interval": 5
+  }
+}

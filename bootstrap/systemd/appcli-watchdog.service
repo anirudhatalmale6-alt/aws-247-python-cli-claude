@@ -1,0 +1,15 @@
+[Unit]
+Description=Watchdog and Claude supervisor for the Python CLI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=/etc/appcli/runner.env
+ExecStart=/opt/appcli/bin/watchdog.sh
+# A Claude diagnosis can take a few minutes; watchdog.sh caps it internally at
+# 420s. This is the outer backstop so a wedged run cannot block the timer forever.
+TimeoutStartSec=600
+StandardOutput=append:/var/log/appcli/watchdog.log
+StandardError=append:/var/log/appcli/watchdog.log

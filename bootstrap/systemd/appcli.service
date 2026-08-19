@@ -1,0 +1,49 @@
+[Unit]
+Description=Python CLI (24/7 runner)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=appcli
+Group=appcli
+WorkingDirectory=/opt/appcli/app
+EnvironmentFile=/etc/appcli/runner.env
+ExecStart=/opt/appcli/bin/run-app.sh
+
+# Restart on ANY exit, including a clean exit 0. A 24/7 watcher that decides it
+# is finished is still an outage as far as this project is concerned.
+Restart=always
+RestartSec=10
+# Give the process 30s to finish the current cycle on stop/redeploy, then SIGKILL.
+# If your CLI sleeps with a bare time.sleep(), a SIGTERM will not wake it and you
+# will hit this timeout on every restart - wait on a threading.Event instead.
+# See examples/demo_worker.py for the pattern.
+TimeoutStopSec=30
+KillMode=mixed
+# StartLimitIntervalSec=0 above means systemd never gives up permanently.
+# Runaway loops are caught by watchdog.sh, which is the layer that can tell the
+# difference between "restarted once" and "restarted thirty times".
+
+# Logs go to a file so the CloudWatch agent can tail them, and to the journal so
+# `journalctl -u appcli` works during a live debug session.
+StandardOutput=append:/var/log/appcli/app.log
+StandardError=append:/var/log/appcli/app.log
+
+# --- hardening -------------------------------------------------------------
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/appcli/app /var/log/appcli /var/lib/appcli
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+# --- resource limits on a t3.micro -----------------------------------------
+MemoryMax=768M
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target

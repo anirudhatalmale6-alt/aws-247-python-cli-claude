@@ -1,0 +1,13 @@
+# Never commit these
+*.tfvars
+!*.tfvars.example
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+*.pem
+*.key
+.env
+__pycache__/
+*.pyc

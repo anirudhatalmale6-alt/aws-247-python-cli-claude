@@ -1,0 +1,55 @@
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# EC2 user-data. Runs once, as root, on first boot.
+#
+# It deliberately does almost nothing itself: it writes the environment file and
+# then hands over to bootstrap/install.sh from the git repo. That way the real
+# installation logic is version-controlled and reviewable rather than buried in
+# Terraform state.
+#
+# Log: /var/log/cloud-init-output.log  (also shipped to CloudWatch)
+# ---------------------------------------------------------------------------
+set -euxo pipefail
+
+exec > >(tee -a /var/log/bootstrap.log) 2>&1
+echo "=== bootstrap starting $(date -Is) ==="
+
+dnf -y update
+dnf -y install git jq tar gzip awscli-2 amazon-cloudwatch-agent
+
+install -d -m 0755 /etc/appcli
+
+cat > /etc/appcli/runner.env <<'ENVEOF'
+PROJECT_NAME="${project_name}"
+AWS_REGION="${aws_region}"
+AWS_DEFAULT_REGION="${aws_region}"
+APP_REPO_URL="${app_repo_url}"
+APP_BRANCH="${app_branch}"
+APP_ENTRYPOINT="${app_entrypoint}"
+CLAUDE_SECRET_ID="${claude_secret_id}"
+APP_SECRET_ID="${app_secret_id}"
+SNS_TOPIC_ARN="${sns_topic_arn}"
+METRIC_NAMESPACE="${metric_namespace}"
+CLAUDE_MODEL="${claude_model}"
+CLAUDE_AUTOFIX="${claude_autofix}"
+WATCHDOG_INTERVAL_MINUTES="${watchdog_interval}"
+LOG_GROUP_APP="${log_group_app}"
+LOG_GROUP_WATCHDOG="${log_group_watchdog}"
+LOG_GROUP_SYSTEM="${log_group_system}"
+ENVEOF
+chmod 0644 /etc/appcli/runner.env
+
+# The git token is written separately so it never appears in the same file we
+# happily cat during troubleshooting.
+if [ -n "${app_git_token}" ]; then
+  printf 'APP_GIT_TOKEN=%s\n' '${app_git_token}' > /etc/appcli/git.env
+  chmod 0600 /etc/appcli/git.env
+fi
+
+rm -rf /opt/bootstrap
+git clone --depth 1 --branch '${bootstrap_branch}' '${bootstrap_repo_url}' /opt/bootstrap
+
+chmod +x /opt/bootstrap/bootstrap/bin/*.sh
+/opt/bootstrap/bootstrap/bin/install.sh
+
+echo "=== bootstrap finished $(date -Is) ==="
